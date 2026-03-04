@@ -1,0 +1,277 @@
+# Prom-Pilot: LLMOps Platform
+
+An enterprise-grade LLMOps platform for managing prompts, orchestrating multi-step LLM flows, running evaluations, and tracing production usage.
+
+## 🏗️ Architecture
+
+- **Backend**: FastAPI (Python 3.12+) with Azure Table Storage and Blob Storage
+- **Frontend**: React 18 + TypeScript with Vite
+- **Storage**: Azure Storage Account (Tables + Blobs)
+- **Authentication**: Azure DefaultAzureCredential (user's own Azure credentials)
+- **Local Development**: Azurite storage emulator
+
+## ✅ Phase 1 Implementation Status
+
+### Completed
+- [x] Backend project setup with uv
+- [x] FastAPI application with CORS and startup logic
+- [x] Azure Table Storage client with DefaultAzureCredential support
+- [x] Azure Blob Storage client with DefaultAzureCredential support
+- [x] Configuration management (Azurite for local, Azure for production)
+- [x] Table Storage entity models (Projects, Prompts, Users)
+- [x] Pydantic schemas for request/response validation
+- [x] Projects CRUD API (`/api/v1/projects`)
+- [x] Prompts CRUD API (`/api/v1/prompts`)
+- [x] Docker Compose configuration for Azurite
+- [x] Frontend project initialized with Vite + React + TypeScript
+- [x] Dependencies configured in package.json
+
+### To Do (Phase 1)
+- [ ] Install frontend dependencies
+- [ ] Setup Tailwind CSS
+- [ ] Setup shadcn/ui components
+- [ ] Create API client and TanStack Query hooks
+- [ ] Create layout components (Header, Sidebar)
+- [ ] Create Projects page
+- [ ] Create Prompts page with Monaco Editor
+- [ ] Write backend tests
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- Python 3.12+
+- Node.js 18+ and npm
+- Docker and Docker Compose
+- Azure CLI (run `az login` for local development)
+- uv (Python package manager): `pip install uv`
+
+### Backend Setup
+
+1. **Install backend dependencies:**
+   ```bash
+   cd backend
+   uv sync
+   ```
+
+2. **Start Azurite (Azure Storage Emulator):**
+   ```bash
+   cd ..
+   docker compose up -d
+   ```
+
+   This starts Azurite with ports:
+   - 10000: Blob Storage
+   - 10001: Queue Storage
+   - 10002: Table Storage
+
+3. **Run the backend:**
+   ```bash
+   cd backend
+   uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+   ```
+
+   The API will be available at:
+   - http://localhost:8000 - Root endpoint
+   - http://localhost:8000/docs - Interactive API documentation (Swagger)
+   - http://localhost:8000/health - Health check
+
+### Frontend Setup
+
+1. **Install frontend dependencies:**
+   ```bash
+   cd frontend
+   npm install
+   ```
+
+2. **Run the frontend dev server:**
+   ```bash
+   npm run dev
+   ```
+
+   The frontend will be available at http://localhost:5173
+
+### Environment Configuration
+
+Copy `.env.example` to `.env` in the root directory:
+
+```bash
+cp .env.example .env
+```
+
+For local development, the default configuration uses Azurite. No changes needed!
+
+For production deployment to Azure:
+- Set `USE_AZURITE=false`
+- Set `AZURE_STORAGE_ACCOUNT_NAME=your_storage_account`
+- Ensure Web App has managed identity with Storage permissions
+
+## 📁 Project Structure
+
+```
+promptflow/
+├── backend/                       # FastAPI backend
+│   ├── app/
+│   │   ├── main.py                # Application entry point
+│   │   ├── config.py              # Settings and configuration
+│   │   ├── api/v1/                # API endpoints
+│   │   │   ├── projects.py        # Projects CRUD
+│   │   │   └── prompts.py         # Prompts CRUD
+│   │   ├── models/
+│   │   │   ├── entities.py        # Table Storage entities
+│   │   │   └── schemas.py         # Pydantic schemas
+│   │   ├── storage/
+│   │   │   ├── table_client.py    # Table Storage client
+│   │   │   └── blob_client.py     # Blob Storage client
+│   │   ├── services/              # Business logic (TBD)
+│   │   └── core/                  # Flow engine, LLM clients (TBD)
+│   ├── tests/                     # Tests (TBD)
+│   └── pyproject.toml             # Python dependencies
+│
+├── frontend/                      # React frontend
+│   ├── src/                       # Source code (to be built)
+│   ├── package.json               # Dependencies configured
+│   └── vite.config.ts             # Vite configuration
+│
+├── docker-compose.yml             # Azurite setup
+├── .env.example                   # Environment variables template
+└── README.md                      # This file
+```
+
+## 🔧 API Endpoints
+
+### Projects
+
+- `GET /api/v1/projects` - List all projects
+- `POST /api/v1/projects` - Create a project
+- `GET /api/v1/projects/{project_id}` - Get project by ID
+- `PUT /api/v1/projects/{project_id}` - Update a project
+- `DELETE /api/v1/projects/{project_id}` - Delete a project
+
+### Prompts
+
+- `GET /api/v1/prompts?project_id={project_id}` - List prompts in a project
+- `POST /api/v1/prompts?project_id={project_id}` - Create a prompt
+- `GET /api/v1/prompts/{prompt_id}?project_id={project_id}` - Get prompt by ID
+- `PUT /api/v1/prompts/{prompt_id}?project_id={project_id}` - Update a prompt
+- `DELETE /api/v1/prompts/{prompt_id}?project_id={project_id}` - Delete a prompt
+
+## 🧪 Testing the API
+
+You can test the API using the interactive docs at http://localhost:8000/docs
+
+Or use curl:
+
+```bash
+# Create a project
+curl -X POST http://localhost:8000/api/v1/projects \
+  -H "Content-Type: application/json" \
+  -d '{"name": "My First Project", "description": "Test project"}'
+
+# List projects
+curl http://localhost:8000/api/v1/projects
+
+# Create a prompt
+curl -X POST "http://localhost:8000/api/v1/prompts?project_id=PROJECT_ID" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Customer Support Bot",
+    "description": "Helpful customer support assistant",
+    "template": "You are a helpful assistant. User question: {{question}}",
+    "model_config": {"model": "gpt-4", "temperature": 0.7}
+  }'
+
+# List prompts in a project
+curl "http://localhost:8000/api/v1/prompts?project_id=PROJECT_ID"
+```
+
+## 📊 Storage Schema
+
+### Table Storage
+
+**projects** table:
+- PartitionKey: "PROJECT"
+- RowKey: {project_id} (UUID)
+- Fields: name, description, created_by, created_at, updated_at
+
+**prompts** table:
+- PartitionKey: {project_id}
+- RowKey: {prompt_id} (UUID)
+- Fields: name, description, template, model_config (JSON), created_by, created_at, updated_at
+
+### Blob Storage
+
+Containers:
+- `traces` - Trace data and span details
+- `flows` - Flow definitions (LangGraph JSON)
+- `evaluations` - Evaluation datasets and results
+- `artifacts` - Model outputs, screenshots, etc.
+
+## 🔐 Authentication
+
+### Local Development
+- Run `az login` to authenticate with Azure CLI
+- DefaultAzureCredential automatically uses your CLI credentials
+- No API keys or secrets needed in code!
+
+### Production (Azure Web App)
+- Web App uses Managed Identity
+- Managed Identity needs these RBAC roles on Storage Account:
+  - `Storage Blob Data Contributor`
+  - `Storage Table Data Contributor`
+- No secrets stored in application configuration
+
+## 🐛 Troubleshooting
+
+### Azurite Connection Issues
+- Ensure Docker is running: `docker ps`
+- Check Azurite is listening: `curl http://localhost:10002/devstoreaccount1/tables`
+- Restart Azurite: `docker compose restart`
+
+### Backend Import Errors
+- Ensure you're in the backend directory
+- Run with uv: `uv run uvicorn app.main:app --reload`
+- Check virtual environment: `uv sync`
+
+### CORS Errors
+- Frontend must run on http://localhost:5173 or add your URL to CORS_ORIGINS in .env
+
+## 📚 Next Steps
+
+1. **Complete Frontend Setup**:
+   - Install dependencies
+   - Configure Tailwind CSS
+   - Setup shadcn/ui
+   - Create API client and hooks
+
+2. **Build UI Components**:
+   - Layout (Header, Sidebar)
+   - Project list and creation
+   - Prompt editor with Monaco
+   - Prompt list and management
+
+3. **Phase 2: Flow Execution**:
+   - LangGraph integration
+   - React Flow visual designer
+   - Flow execution engine
+
+4. **Phase 3: Tracing**:
+   - OpenTelemetry integration
+   - Trace storage and retrieval
+   - Trace visualization UI
+
+## 📖 Documentation
+
+- [API Documentation](http://localhost:8000/docs) (when backend is running)
+- [Implementation Plan](CLAUDE.md) - Full specification and architecture
+- [Azure Storage Tables SDK](https://learn.microsoft.com/en-us/python/api/overview/azure/data-tables-readme)
+- [FastAPI Documentation](https://fastapi.tiangolo.com/)
+- [React Documentation](https://react.dev/)
+
+## 🤝 Contributing
+
+This project follows the implementation plan in [CLAUDE.md](CLAUDE.md). We're currently in Phase 1 (Foundation).
+
+## 📝 License
+
+[Your License Here]
