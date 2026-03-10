@@ -2,6 +2,12 @@
 
 An enterprise-grade LLMOps platform for managing prompts, orchestrating multi-step LLM flows, running evaluations, and tracing production usage.
 
+The tool is made to ensure that one can segment the management of prompts, while still constructing multi-stage flows
+
+Ideally this tool servers as a gap in the market, that are only solved half by tools such as Langfuse or Haystack
+
+The tool focus on using Azure as the backend for hosting
+
 ## 🏗️ Architecture
 
 - **Backend**: FastAPI (Python 3.12+) with Azure Table Storage and Blob Storage
@@ -10,31 +16,6 @@ An enterprise-grade LLMOps platform for managing prompts, orchestrating multi-st
 - **Authentication**: Azure DefaultAzureCredential (user's own Azure credentials)
 - **Local Development**: Azurite storage emulator
 
-## ✅ Phase 1 Implementation Status
-
-### Completed
-- [x] Backend project setup with uv
-- [x] FastAPI application with CORS and startup logic
-- [x] Azure Table Storage client with DefaultAzureCredential support
-- [x] Azure Blob Storage client with DefaultAzureCredential support
-- [x] Configuration management (Azurite for local, Azure for production)
-- [x] Table Storage entity models (Projects, Prompts, Users)
-- [x] Pydantic schemas for request/response validation
-- [x] Projects CRUD API (`/api/v1/projects`)
-- [x] Prompts CRUD API (`/api/v1/prompts`)
-- [x] Docker Compose configuration for Azurite
-- [x] Frontend project initialized with Vite + React + TypeScript
-- [x] Dependencies configured in package.json
-
-### To Do (Phase 1)
-- [ ] Install frontend dependencies
-- [ ] Setup Tailwind CSS
-- [ ] Setup shadcn/ui components
-- [ ] Create API client and TanStack Query hooks
-- [ ] Create layout components (Header, Sidebar)
-- [ ] Create Projects page
-- [ ] Create Prompts page with Monaco Editor
-- [ ] Write backend tests
 
 ## 🚀 Quick Start
 
@@ -262,11 +243,9 @@ Containers:
 
 ## 📖 Documentation
 
+- [SDK Documentation](docs/) - Python SDK guides and reference
 - [API Documentation](http://localhost:8000/docs) (when backend is running)
 - [Implementation Plan](CLAUDE.md) - Full specification and architecture
-- [Azure Storage Tables SDK](https://learn.microsoft.com/en-us/python/api/overview/azure/data-tables-readme)
-- [FastAPI Documentation](https://fastapi.tiangolo.com/)
-- [React Documentation](https://react.dev/)
 
 ## 🤝 Contributing
 
