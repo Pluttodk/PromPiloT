@@ -10,6 +10,7 @@ import httpx
 from prom_pilot.resources.datasets import DatasetsResource
 from prom_pilot.resources.evaluations import EvaluationsResource
 from prom_pilot.resources.flows import FlowsResource
+from prom_pilot.resources.prompts import PromptsResource
 from prom_pilot.resources.traces import TracesResource
 
 _T = TypeVar("_T")
@@ -56,6 +57,7 @@ class PromPilotClient:
         self._project_id = project_id
 
         self.flows = FlowsResource(self._http_client, project_id)
+        self.prompts = PromptsResource(self._http_client, project_id)
         self.datasets = DatasetsResource(self._http_client, project_id)
         self.evaluations = EvaluationsResource(self._http_client, project_id)
         self.traces = TracesResource(self._http_client, project_id)

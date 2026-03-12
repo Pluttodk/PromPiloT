@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class FlowExecuteResponse(BaseModel):
@@ -206,6 +206,62 @@ class TraceResponse(BaseModel):
     error_message: str | None = None
     created_at: datetime
     eval_run_id: str | None = None
+
+
+class PromptResponse(BaseModel):
+    """Summary of a prompt resource.
+
+    Attributes:
+        prompt_id: Unique prompt identifier.
+        project_id: Project this prompt belongs to.
+        name: Display name of the prompt.
+        content: Prompt template content (mapped from backend field ``template``).
+        system_prompt: Optional system-level instructions.
+        description: Optional description.
+        production_version: Version number currently tagged as production.
+        latest_version: Monotonic counter for the most recent version.
+        created_by: User ID of the creator.
+        created_at: Creation timestamp.
+        updated_at: Last-modified timestamp.
+    """
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    prompt_id: str
+    project_id: str
+    name: str
+    content: str = Field("", alias="template")
+    system_prompt: str = ""
+    description: str = ""
+    production_version: int | None = None
+    latest_version: int = 0
+    created_by: str = ""
+    created_at: datetime
+    updated_at: datetime
+
+
+class PromptVersionResponse(BaseModel):
+    """A versioned snapshot of a prompt.
+
+    Attributes:
+        version_number: 1-based version counter.
+        content: Template content at this version (mapped from backend field ``template``).
+        tags: User-defined tags, e.g. ``["production"]``.
+        created_by: User ID who created this version.
+        created_at: Creation timestamp.
+    """
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    version_number: int
+    content: str = Field("", alias="template")
+    tags: list[str] = []
+    created_by: str = ""
+    created_at: datetime
+
+
+FlowResult = FlowExecuteResponse
+Trace = TraceResponse
 
 
 class TraceListItem(BaseModel):

@@ -11,6 +11,7 @@ import respx
 
 from prom_pilot import PromPilotClient
 from prom_pilot.exceptions import ExecutionError, NotFoundError, PromPilotError
+from prom_pilot.models import PromptResponse, PromptVersionResponse
 
 BASE_URL = "http://test.local"
 PROJECT_ID = "proj-1"
@@ -20,6 +21,7 @@ FLOW_ID = "flow-abc"
 DATASET_ID = "ds-xyz"
 RUN_ID = "run-001"
 TRACE_ID = "trace-111"
+PROMPT_ID = "prompt-ppp"
 
 
 def _flow_payload(flow_id: str = FLOW_ID) -> dict:
@@ -80,6 +82,32 @@ def _run_payload(status: str = "completed") -> dict:
         "created_by": "user",
         "created_at": NOW,
         "completed_at": NOW,
+    }
+
+
+def _prompt_payload(prompt_id: str = PROMPT_ID) -> dict:
+    return {
+        "prompt_id": prompt_id,
+        "project_id": PROJECT_ID,
+        "name": "Test Prompt",
+        "template": "Hello {{ name }}",
+        "system_prompt": "",
+        "description": "",
+        "production_version": None,
+        "latest_version": 0,
+        "created_by": "user",
+        "created_at": NOW,
+        "updated_at": NOW,
+    }
+
+
+def _version_payload(version_number: int = 1) -> dict:
+    return {
+        "version_number": version_number,
+        "template": "Hello {{ name }}",
+        "tags": [],
+        "created_by": "user",
+        "created_at": NOW,
     }
 
 
@@ -312,6 +340,160 @@ class TestTracesResource:
         )
         with pytest.raises(NotFoundError, match="Trace not found"):
             await client.traces.get("bad-trace")
+
+
+class TestFlowsResourceMutations:
+    """Tests for FlowsResource.create, update, and delete."""
+
+    @respx.mock
+    async def test_create_flow(self, client: PromPilotClient) -> None:
+        """create() returns a FlowResponse for the new flow."""
+        respx.post(f"{BASE_URL}/api/v1/flows/").mock(
+            return_value=httpx.Response(201, json=_flow_payload())
+        )
+        flow = await client.flows.create("Test Flow")
+        assert flow.flow_id == FLOW_ID
+        assert flow.name == "Test Flow"
+
+    @respx.mock
+    async def test_update_flow(self, client: PromPilotClient) -> None:
+        """update() returns the updated FlowResponse."""
+        updated = _flow_payload()
+        updated["name"] = "Renamed Flow"
+        respx.put(f"{BASE_URL}/api/v1/flows/{FLOW_ID}").mock(
+            return_value=httpx.Response(200, json=updated)
+        )
+        flow = await client.flows.update(FLOW_ID, name="Renamed Flow")
+        assert flow.name == "Renamed Flow"
+
+    @respx.mock
+    async def test_delete_flow(self, client: PromPilotClient) -> None:
+        """delete() completes without raising for an existing flow."""
+        respx.delete(f"{BASE_URL}/api/v1/flows/{FLOW_ID}").mock(
+            return_value=httpx.Response(200, json={"message": "deleted"})
+        )
+        await client.flows.delete(FLOW_ID)
+
+    @respx.mock
+    async def test_delete_flow_not_found(self, client: PromPilotClient) -> None:
+        """delete() raises NotFoundError on 404."""
+        respx.delete(f"{BASE_URL}/api/v1/flows/bad-id").mock(
+            return_value=httpx.Response(404, json={"detail": "Flow not found"})
+        )
+        with pytest.raises(NotFoundError):
+            await client.flows.delete("bad-id")
+
+
+class TestPromptsResource:
+    """Tests for PromptsResource covering CRUD and versioning."""
+
+    @respx.mock
+    async def test_list_prompts(self, client: PromPilotClient) -> None:
+        """list() returns a list of PromptResponse objects."""
+        respx.get(f"{BASE_URL}/api/v1/prompts/").mock(
+            return_value=httpx.Response(200, json=[_prompt_payload()])
+        )
+        prompts = await client.prompts.list()
+        assert len(prompts) == 1
+        assert prompts[0].prompt_id == PROMPT_ID
+        assert prompts[0].content == "Hello {{ name }}"
+
+    @respx.mock
+    async def test_create_prompt(self, client: PromPilotClient) -> None:
+        """create() returns a PromptResponse for the new prompt."""
+        respx.post(f"{BASE_URL}/api/v1/prompts/").mock(
+            return_value=httpx.Response(201, json=_prompt_payload())
+        )
+        prompt = await client.prompts.create("Test Prompt", template="Hello {{ name }}")
+        assert prompt.prompt_id == PROMPT_ID
+        assert prompt.name == "Test Prompt"
+
+    @respx.mock
+    async def test_get_prompt(self, client: PromPilotClient) -> None:
+        """get() returns a single PromptResponse."""
+        respx.get(f"{BASE_URL}/api/v1/prompts/{PROMPT_ID}").mock(
+            return_value=httpx.Response(200, json=_prompt_payload())
+        )
+        prompt = await client.prompts.get(PROMPT_ID)
+        assert prompt.prompt_id == PROMPT_ID
+
+    @respx.mock
+    async def test_get_prompt_not_found(self, client: PromPilotClient) -> None:
+        """get() raises NotFoundError on 404."""
+        respx.get(f"{BASE_URL}/api/v1/prompts/bad").mock(
+            return_value=httpx.Response(404, json={"detail": "Prompt not found"})
+        )
+        with pytest.raises(NotFoundError, match="Prompt not found"):
+            await client.prompts.get("bad")
+
+    @respx.mock
+    async def test_update_prompt(self, client: PromPilotClient) -> None:
+        """update() returns the updated PromptResponse."""
+        updated = _prompt_payload()
+        updated["name"] = "Renamed"
+        respx.put(f"{BASE_URL}/api/v1/prompts/{PROMPT_ID}").mock(
+            return_value=httpx.Response(200, json=updated)
+        )
+        prompt = await client.prompts.update(PROMPT_ID, name="Renamed")
+        assert prompt.name == "Renamed"
+
+    @respx.mock
+    async def test_delete_prompt(self, client: PromPilotClient) -> None:
+        """delete() completes without raising."""
+        respx.delete(f"{BASE_URL}/api/v1/prompts/{PROMPT_ID}").mock(
+            return_value=httpx.Response(200, json={"message": "deleted"})
+        )
+        await client.prompts.delete(PROMPT_ID)
+
+    @respx.mock
+    async def test_list_versions(self, client: PromPilotClient) -> None:
+        """list_versions() returns a list of PromptVersionResponse objects."""
+        respx.get(f"{BASE_URL}/api/v1/prompts/{PROMPT_ID}/versions").mock(
+            return_value=httpx.Response(200, json=[_version_payload(1), _version_payload(2)])
+        )
+        versions = await client.prompts.list_versions(PROMPT_ID)
+        assert len(versions) == 2
+        assert versions[0].version_number == 1
+        assert versions[0].content == "Hello {{ name }}"
+
+    @respx.mock
+    async def test_create_version(self, client: PromPilotClient) -> None:
+        """create_version() snapshots the current template."""
+        respx.post(f"{BASE_URL}/api/v1/prompts/{PROMPT_ID}/versions").mock(
+            return_value=httpx.Response(201, json=_version_payload(1))
+        )
+        version = await client.prompts.create_version(PROMPT_ID)
+        assert version.version_number == 1
+
+    @respx.mock
+    async def test_promote_sets_production_tag(self, client: PromPilotClient) -> None:
+        """promote() sends tags=['production'] to the version tags endpoint."""
+        tagged = _version_payload(1)
+        tagged["tags"] = ["production"]
+        route = respx.put(
+            f"{BASE_URL}/api/v1/prompts/{PROMPT_ID}/versions/1/tags"
+        ).mock(return_value=httpx.Response(200, json=tagged))
+
+        version = await client.prompts.promote(PROMPT_ID, 1)
+
+        assert version.tags == ["production"]
+        assert route.called
+        sent_body = json.loads(route.calls.last.request.content)
+        assert sent_body["tags"] == ["production"]
+
+    @respx.mock
+    async def test_rollback_promotes_older_version(self, client: PromPilotClient) -> None:
+        """rollback() is a convenience alias for promote() on an older version."""
+        tagged = _version_payload(2)
+        tagged["tags"] = ["production"]
+        route = respx.put(
+            f"{BASE_URL}/api/v1/prompts/{PROMPT_ID}/versions/2/tags"
+        ).mock(return_value=httpx.Response(200, json=tagged))
+
+        version = await client.prompts.rollback(PROMPT_ID, to_version=2)
+
+        assert version.tags == ["production"]
+        assert route.called
 
 
 class TestClientHelpers:

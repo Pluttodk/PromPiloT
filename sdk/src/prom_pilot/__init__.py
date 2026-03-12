@@ -31,9 +31,14 @@ from prom_pilot.models import (
     EvalRunResponse,
     FlowExecuteResponse,
     FlowResponse,
+    FlowResult,
+    PromptResponse,
+    PromptVersionResponse,
+    Trace,
     TraceListItem,
     TraceResponse,
 )
+from prom_pilot.resources.prompts import PromptsResource
 
 __all__ = [
     "PromPilotClient",
@@ -42,10 +47,15 @@ __all__ = [
     "ExecutionError",
     "FlowExecuteResponse",
     "FlowResponse",
+    "FlowResult",
+    "PromptResponse",
+    "PromptVersionResponse",
+    "PromptsResource",
     "DatasetResponse",
     "DatasetItemResponse",
     "EvalRunResponse",
     "EvalResultResponse",
     "TraceResponse",
     "TraceListItem",
+    "Trace",
 ]

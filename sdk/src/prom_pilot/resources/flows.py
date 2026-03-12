@@ -105,6 +105,93 @@ class FlowsResource:
         )
         return FlowResponse.model_validate(data)
 
+    async def create(
+        self,
+        name: str,
+        *,
+        description: str = "",
+        definition: dict[str, Any] | None = None,
+        project_id: str | None = None,
+    ) -> FlowResponse:
+        """Create a new flow.
+
+        Args:
+            name: Display name for the flow.
+            description: Optional description.
+            definition: Flow graph definition with ``nodes`` and ``edges`` keys.
+            project_id: Project ID override; uses client default when omitted.
+
+        Returns:
+            :class:`~prom_pilot.models.FlowResponse` for the new flow.
+        """
+        data = await self._request(
+            "POST",
+            "/api/v1/flows/",
+            params={"project_id": self._project(project_id)},
+            json={
+                "name": name,
+                "description": description,
+                "definition": definition or {"nodes": [], "edges": []},
+            },
+        )
+        return FlowResponse.model_validate(data)
+
+    async def update(
+        self,
+        flow_id: str,
+        *,
+        name: str | None = None,
+        description: str | None = None,
+        definition: dict[str, Any] | None = None,
+        project_id: str | None = None,
+    ) -> FlowResponse:
+        """Update fields on an existing flow.
+
+        Args:
+            flow_id: Flow identifier.
+            name: New display name, or ``None`` to leave unchanged.
+            description: New description, or ``None`` to leave unchanged.
+            definition: New flow graph definition, or ``None`` to leave unchanged.
+            project_id: Project ID override; uses client default when omitted.
+
+        Returns:
+            Updated :class:`~prom_pilot.models.FlowResponse`.
+
+        Raises:
+            NotFoundError: If the flow does not exist.
+        """
+        body: dict[str, Any] = {}
+        if name is not None:
+            body["name"] = name
+        if description is not None:
+            body["description"] = description
+        if definition is not None:
+            body["definition"] = definition
+
+        data = await self._request(
+            "PUT",
+            f"/api/v1/flows/{flow_id}",
+            params={"project_id": self._project(project_id)},
+            json=body,
+        )
+        return FlowResponse.model_validate(data)
+
+    async def delete(self, flow_id: str, *, project_id: str | None = None) -> None:
+        """Delete a flow.
+
+        Args:
+            flow_id: Flow identifier.
+            project_id: Project ID override; uses client default when omitted.
+
+        Raises:
+            NotFoundError: If the flow does not exist.
+        """
+        await self._request(
+            "DELETE",
+            f"/api/v1/flows/{flow_id}",
+            params={"project_id": self._project(project_id)},
+        )
+
     async def execute(
         self,
         flow_id: str,

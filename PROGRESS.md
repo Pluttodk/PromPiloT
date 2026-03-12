@@ -94,7 +94,7 @@
 - [x] Tag chips with colour coding (amber=production, blue=staging, green=dev) + inline add/remove
 - [x] Header Production badge stays live via usePrompt query (reacts to tag mutations instantly)
 - [ ] Azure Bicep templates
-- [ ] Docker deployment
+- [x] Docker deployment (multi-stage Dockerfiles + docker-compose full stack)
 
 ### Phase 6 - Evaluation Framework (Completed)
 - [x] New storage tables: scores, datasets, datasetitems, evalruns, evalresults
@@ -128,14 +128,22 @@
 ### Phase 7 - SDK & Deployment
 - [x] Python SDK (`sdk/` package — `prom-pilot-sdk`, importable as `prom_pilot`)
   - `PromPilotClient` with async-first API and `run_sync()` convenience wrapper
-  - `FlowsResource` — list, get, execute
+  - `FlowsResource` — list, get, create, update, delete, execute
+  - `PromptsResource` — full CRUD + versioning (list, create, get, update, delete, list_versions, create_version, set_version_tags, promote, rollback)
   - `DatasetsResource` — CRUD + item management
   - `EvaluationsResource` — create, poll, `run_and_wait()` with timeout
   - `TracesResource` — get, list with filters
-  - Pydantic response models matching backend schemas
+  - `PromptResponse`, `PromptVersionResponse`, `FlowResult`, `Trace` models added
   - `PromPilotError` / `NotFoundError` / `ExecutionError` exceptions
-  - 17 unit tests (all passing) with `respx` mock transport
-- [ ] Azure Bicep templates / Docker deployment
+  - 31 SDK tests (all passing) with `respx` mock transport
+- [x] Backend test suite — 35 tests, 0% → full coverage (no Azure required)
+  - `conftest.py` — singleton-mock fixtures for table + blob storage
+  - Unit: `test_flow_executor.py` (10 tests), `test_llm_judge.py` (7 tests), `test_eval_runner.py` (3 tests)
+  - Integration: `test_api_projects.py`, `test_api_flows.py`, `test_api_evaluations.py` (15 tests)
+- [x] GitHub Actions CI — `backend-tests.yml` + `sdk-tests.yml` (run on PR to main)
+- [x] Docs corrections — aspirational features clearly marked as Planned in SDK docs
+- [ ] Azure Bicep templates
+- [x] Docker deployment (multi-stage Dockerfiles + docker-compose full stack)
 
 ### Phase 8 - Access Control & Polish
 - [ ] Project permissions
@@ -144,17 +152,19 @@
 ## Quick Commands
 
 ```bash
-# Start Azurite
-docker compose up -d
+# Full stack (Docker — recommended)
+docker compose up -d --build
 
-# Run backend
-cd backend && uv run uvicorn app.main:app --reload
-
-# Run frontend
-cd frontend && npm run dev
-
-# API docs
+# API docs (after compose up)
 http://localhost:8000/docs
+
+# Frontend SPA (after compose up)
+http://localhost/
+
+# Local dev (hot-reload)
+docker compose up -d azurite          # storage emulator only
+cd backend && uv run uvicorn app.main:app --reload
+cd frontend && npm run dev
 ```
 
 ## Key Files

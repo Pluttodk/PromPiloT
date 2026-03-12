@@ -108,36 +108,9 @@ async def main() -> None:
 
 The flow definition maps each input key to the steps that need it. From the caller's side, you always pass a flat `inputs` dict.
 
-## Schema validation of the flow
+## Input validation
 
-Before execution, the SDK validates that all required inputs are present and that each step's `input_mapping` references valid sources. Validation errors are raised before any LLM call is made.
-
-```python
-from prom_pilot import FlowResult, FlowValidationError
-
-async def main() -> None:
-    try:
-        result: FlowResult = await client.flows.execute(
-            "emoji_pipeline",
-            inputs={},
-        )
-    except FlowValidationError as error:
-        print(error.missing_inputs)
-        # ["sentence"]
-        print(error.broken_mappings)
-        # []
-```
-
-You can also validate without executing:
-
-```python
-from prom_pilot import FlowValidationResult
-
-async def main() -> None:
-    validation: FlowValidationResult = await client.flows.validate(
-        "emoji_pipeline",
-        inputs={"sentence": "test"},
-    )
-    print(validation.is_valid)
-    # True
-```
+> **Planned — not yet available.** Input validation (pre-execution schema checks and a
+> `flows.validate()` method) is on the roadmap. Currently, missing or incorrectly-named
+> inputs raise an `ExecutionError` at runtime when the flow engine encounters a node it
+> cannot resolve.
